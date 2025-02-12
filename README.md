@@ -165,3 +165,10 @@ After successful execution, the curated trusted step trainer data will be availa
 ## Contact
 
 For questions or further assistance, please contact [Your Name or Team] at [your.email@example.com].
+
+
+After successful execution, the curated trusted step trainer data will be available in the Glue Data Catalog table `step_trainer_trusted` and/or written to the designated S3 location (if configured that way).
+
+## Contact
+
+For questions or further assistance, please contact [Your Name or Team] at [your.email@example.com].
