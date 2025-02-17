@@ -4,6 +4,7 @@ from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
+from awsglue.dynamicframe import DynamicFrame
 
 args = getResolvedOptions(sys.argv, ["JOB_NAME"])
 sc = SparkContext()
@@ -12,15 +13,15 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args["JOB_NAME"], args)
 
-# Script generated for node customers_curated
-customers_curated_node1690251327791 = glueContext.create_dynamic_frame.from_catalog(
+# Load customers curated data
+customers_curated_node = glueContext.create_dynamic_frame.from_catalog(
     database="dend",
     table_name="customers_curated",
-    transformation_ctx="customers_curated_node1690251327791",
+    transformation_ctx="customers_curated_node",
 )
 
-# Script generated for node step_trainer_landing
-step_trainer_landing_node1 = glueContext.create_dynamic_frame.from_options(
+# Load step trainer landing data
+step_trainer_landing_node = glueContext.create_dynamic_frame.from_options(
     format_options={"multiline": False},
     connection_type="s3",
     format="json",
@@ -28,42 +29,39 @@ step_trainer_landing_node1 = glueContext.create_dynamic_frame.from_options(
         "paths": ["s3://dend-lake-house/step_trainer/landing/"],
         "recurse": True,
     },
-    transformation_ctx="step_trainer_landing_node1",
+    transformation_ctx="step_trainer_landing_node",
 )
 
-# Script generated for node Join
-Join_node1690251349178 = Join.apply(
-    frame1=step_trainer_landing_node1,
-    frame2=customers_curated_node1690251327791,
+# Perform Join Operation
+Join_node = Join.apply(
+    frame1=step_trainer_landing_node,
+    frame2=customers_curated_node,
     keys1=["serialNumber"],
     keys2=["serialnumber"],
-    transformation_ctx="Join_node1690251349178",
+    transformation_ctx="Join_node",
 )
 
-# Script generated for node Drop Fields
-DropFields_node1690251367538 = DropFields.apply(
-    frame=Join_node1690251349178,
+# Drop unnecessary fields
+DropFields_node = DropFields.apply(
+    frame=Join_node,
     paths=[
-        "customername",
-        "email",
-        "phone",
-        "birthday",
-        "serialnumber",
-        "registrationdate",
-        "lastupdatedate",
-        "sharewithresearchasofdate",
-        "sharewithpublicasofdate",
-        "sharewithfriendsasofdate",
+        "customername", "email", "phone", "birthday", "serialnumber", "registrationdate",
+        "lastupdatedate", "sharewithresearchasofdate", "sharewithpublicasofdate", "sharewithfriendsasofdate"
     ],
-    transformation_ctx="DropFields_node1690251367538",
+    transformation_ctx="DropFields_node",
 )
 
-# Script generated for node Step Trainer Trusted
-StepTrainerTrusted_node1690274010832 = glueContext.write_dynamic_frame.from_catalog(
-    frame=DropFields_node1690251367538,
+# Enable dynamic schema inference and update Data Catalog
+StepTrainerTrusted_node = glueContext.write_dynamic_frame.from_catalog(
+    frame=DropFields_node,
     database="dend",
     table_name="step_trainer_trusted",
-    transformation_ctx="StepTrainerTrusted_node1690274010832",
+    additional_options={
+        "enableUpdateCatalog": True,
+        "updateBehavior": "UPDATE_IN_DATABASE",
+        "partitionKeys": []  # Add partition keys if applicable
+    },
+    transformation_ctx="StepTrainerTrusted_node",
 )
 
 job.commit()
