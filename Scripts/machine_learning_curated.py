@@ -4,6 +4,7 @@ from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
+from awsglue.dynamicframe import DynamicFrame
 
 args = getResolvedOptions(sys.argv, ["JOB_NAME"])
 sc = SparkContext()
@@ -12,42 +13,47 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args["JOB_NAME"], args)
 
-# Script generated for node Accelerometer Trusted
-AccelerometerTrusted_node1690275008605 = glueContext.create_dynamic_frame.from_catalog(
+# Load Accelerometer Trusted data
+AccelerometerTrusted_node = glueContext.create_dynamic_frame.from_catalog(
     database="dend",
     table_name="accelerometer_trusted",
-    transformation_ctx="AccelerometerTrusted_node1690275008605",
+    transformation_ctx="AccelerometerTrusted_node",
 )
 
-# Script generated for node Step Trainer Trusted
-StepTrainerTrusted_node1690274998131 = glueContext.create_dynamic_frame.from_catalog(
+# Load Step Trainer Trusted data
+StepTrainerTrusted_node = glueContext.create_dynamic_frame.from_catalog(
     database="dend",
     table_name="step_trainer_trusted",
-    transformation_ctx="StepTrainerTrusted_node1690274998131",
+    transformation_ctx="StepTrainerTrusted_node",
 )
 
-# Script generated for node Join
-Join_node1690275037055 = Join.apply(
-    frame1=StepTrainerTrusted_node1690274998131,
-    frame2=AccelerometerTrusted_node1690275008605,
+# Perform Join Operation
+Join_node = Join.apply(
+    frame1=StepTrainerTrusted_node,
+    frame2=AccelerometerTrusted_node,
     keys1=["sensorreadingtime"],
     keys2=["timestamp"],
-    transformation_ctx="Join_node1690275037055",
+    transformation_ctx="Join_node",
 )
 
-# Script generated for node Drop Fields
-DropFields_node1690275056039 = DropFields.apply(
-    frame=Join_node1690275037055,
+# Drop unnecessary fields
+DropFields_node = DropFields.apply(
+    frame=Join_node,
     paths=["user"],
-    transformation_ctx="DropFields_node1690275056039",
+    transformation_ctx="DropFields_node",
 )
 
-# Script generated for node Machine Learning Curated
-MachineLearningCurated_node1690275064394 = glueContext.write_dynamic_frame.from_catalog(
-    frame=DropFields_node1690275056039,
+# Enable dynamic schema inference and update Data Catalog
+MachineLearningCurated_node = glueContext.write_dynamic_frame.from_catalog(
+    frame=DropFields_node,
     database="dend",
     table_name="machine_learning_curated",
-    transformation_ctx="MachineLearningCurated_node1690275064394",
+    additional_options={
+        "enableUpdateCatalog": True,
+        "updateBehavior": "UPDATE_IN_DATABASE",
+        "partitionKeys": []  # Add partition keys if applicable
+    },
+    transformation_ctx="MachineLearningCurated_node",
 )
 
 job.commit()
