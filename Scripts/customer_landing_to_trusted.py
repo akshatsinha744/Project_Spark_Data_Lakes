@@ -13,7 +13,7 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args["JOB_NAME"], args)
 
-# Script generated for node S3 bucket
+# Load data from S3 bucket
 S3bucket_node1 = glueContext.create_dynamic_frame.from_options(
     format_options={"multiline": False},
     connection_type="s3",
@@ -25,23 +25,25 @@ S3bucket_node1 = glueContext.create_dynamic_frame.from_options(
     transformation_ctx="S3bucket_node1",
 )
 
-# Script generated for node PrivacyFilter
-PrivacyFilter_node1689302643878 = Filter.apply(
+# Apply Privacy Filter
+PrivacyFilter_node = Filter.apply(
     frame=S3bucket_node1,
     f=lambda row: (not (row["shareWithResearchAsOfDate"] == 0)),
-    transformation_ctx="PrivacyFilter_node1689302643878",
+    transformation_ctx="PrivacyFilter_node",
 )
 
-# Script generated for node Trusted Customer Zone
-TrustedCustomerZone_node1689302785277 = glueContext.write_dynamic_frame.from_options(
-    frame=PrivacyFilter_node1689302643878,
+# Enable dynamic schema inference and update Data Catalog
+TrustedCustomerZone_node = glueContext.write_dynamic_frame.from_options(
+    frame=PrivacyFilter_node,
     connection_type="s3",
     format="json",
     connection_options={
         "path": "s3://dend-lake-house/customer/trusted/",
         "partitionKeys": [],
+        "enableUpdateCatalog": True,
+        "updateBehavior": "UPDATE_IN_DATABASE"
     },
-    transformation_ctx="TrustedCustomerZone_node1689302785277",
+    transformation_ctx="TrustedCustomerZone_node",
 )
 
 job.commit()
